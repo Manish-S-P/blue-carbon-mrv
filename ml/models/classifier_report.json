@@ -1,0 +1,64 @@
+{
+  "n_rows": 18000,
+  "n_cells": 2633,
+  "cv": "GroupKFold on cell",
+  "folds": 5,
+  "accuracy": 0.9021,
+  "kappa": 0.8532,
+  "per_class": {
+    "mangrove": {
+      "precision": 0.9079774908970539,
+      "recall": 0.9143333333333333,
+      "f1-score": 0.9111443281846869,
+      "support": 6000.0
+    },
+    "wetland": {
+      "precision": 0.8505091021289726,
+      "recall": 0.9188333333333333,
+      "f1-score": 0.883352026918763,
+      "support": 6000.0
+    },
+    "other": {
+      "precision": 0.9567202337472608,
+      "recall": 0.8731666666666666,
+      "f1-score": 0.9130359010108051,
+      "support": 6000.0
+    },
+    "accuracy": 0.9021111111111111,
+    "macro avg": {
+      "precision": 0.9050689422577625,
+      "recall": 0.9021111111111111,
+      "f1-score": 0.902510752038085,
+      "support": 18000.0
+    },
+    "weighted avg": {
+      "precision": 0.9050689422577624,
+      "recall": 0.9021111111111111,
+      "f1-score": 0.9025107520380852,
+      "support": 18000.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      5486,
+      434,
+      80
+    ],
+    [
+      330,
+      5513,
+      157
+    ],
+    [
+      226,
+      535,
+      5239
+    ]
+  ],
+  "labels": [
+    "mangrove",
+    "wetland",
+    "other"
+  ],
+  "note": "Agreement with ESA WorldCover 2021 (a modelled product), not field truth."
+}

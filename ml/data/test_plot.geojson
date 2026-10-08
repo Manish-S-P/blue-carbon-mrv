@@ -1,0 +1,2 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"plot_id": "pichavaram_demo"},
+ "geometry": {"type": "Polygon", "coordinates": [[[79.796, 11.416], [79.800, 11.416], [79.800, 11.428], [79.796, 11.428], [79.796, 11.416]]]}}]}

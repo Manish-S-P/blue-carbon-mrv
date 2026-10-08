@@ -1,0 +1,19 @@
+# secrets
+.env
+**/.env
+# python
+ml/venv/
+__pycache__/
+.pytest_cache/
+# node
+node_modules/
+web/dist/
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+# local runtime data
+backend/local_ipfs/
+contracts/deployments/localhost.json
+ml/data/gedi_parts/
+# trained models are large (~89 MB); rebuild with the scripts in README
+ml/models/*.joblib

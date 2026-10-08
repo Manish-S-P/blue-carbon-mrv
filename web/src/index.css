@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-sand: #f5f2ea;      /* page background */
+  --color-paper: #fffdf8;     /* cards */
+  --color-ink: #12201e;       /* text */
+  --color-muted: #5b6b67;
+  --color-line: #e2ddd0;
+  --color-lagoon: #0c5e5b;    /* primary */
+  --color-lagoon-light: #d8ece7;
+  --color-leaf: #2f7a45;      /* success / mangrove */
+  --color-leaf-light: #e1f1e3;
+  --color-amber: #b26b00;     /* review */
+  --color-amber-light: #fbefd9;
+  --color-coral: #b4442f;     /* error / reject */
+  --color-coral-light: #f8e2dc;
+}
+
+body { @apply bg-sand text-ink font-sans antialiased; }
+h1, h2, h3 { @apply font-display; }
+
+@utility card { @apply bg-paper border border-line rounded-2xl; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed; }
+@utility btn-primary { @apply btn bg-lagoon text-white hover:bg-[#094b49]; }
+@utility btn-ghost { @apply btn border border-line bg-paper hover:bg-white; }
+@utility btn-danger { @apply btn bg-coral text-white hover:opacity-90; }
+@utility label { @apply text-xs font-medium uppercase tracking-wider text-muted; }
+@utility input { @apply w-full rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-lagoon focus:ring-2 focus:ring-lagoon-light; }
+
+.leaflet-container { font-family: var(--font-sans); }

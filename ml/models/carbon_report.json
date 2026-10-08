@@ -1,0 +1,38 @@
+{
+  "n_shots": 7119,
+  "n_cells": 501,
+  "shot": {
+    "rmse": 16.248693494571683,
+    "mae": 11.62202739936919,
+    "r2": 0.28333405529146105,
+    "rmse_predict_mean": 19.193760114315456
+  },
+  "cell": {
+    "n_cells": 408,
+    "rmse": 7.381720113020679,
+    "r2": 0.6270034184696194
+  },
+  "mean_agbd_se": 16.366029721190877,
+  "agb_uncertainty_mg_ha": 17.953738347817065,
+  "uncertainty_tco2e_ha": 63.0026006056492,
+  "conversion_sensitivity_per_100Mg": {
+    "cf=0.451,R=0.29": 213.32,
+    "cf=0.451,R=0.49": 246.4,
+    "cf=0.47,R=0.29": 222.31,
+    "cf=0.47,R=0.49": 256.78
+  },
+  "feature_importance": {
+    "B2": 0.1087,
+    "B3": 0.1551,
+    "B4": 0.0535,
+    "B8": 0.0578,
+    "B11": 0.1865,
+    "NDVI": 0.0522,
+    "NDWI": 0.0576,
+    "EVI": 0.1317,
+    "VV_db": 0.0808,
+    "VH_db": 0.0714,
+    "VV_minus_VH_db": 0.0447
+  },
+  "note": "Agreement with GEDI L4A (a modelled product), not field truth."
+}

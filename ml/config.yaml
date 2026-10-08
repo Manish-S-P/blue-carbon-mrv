@@ -1,0 +1,84 @@
+site:
+  name: "Pichavaram mangroves, Tamil Nadu"
+  centre: {lat: 11.43, lon: 79.78}
+
+gee:
+  project: "river-carrier-398207"
+
+dates:
+  start: "2019-04-01"
+  end: "2025-06-30"
+
+# Training / study region: boxes [west, south, east, north] on the TN + AP coast.
+# Checked against WorldCover 2021: each box holds real mangrove (1.2k to 20k ha).
+# Plots outside these boxes are rejected (model not trained there).
+study_area:
+  boxes:
+    pichavaram: [79.70, 11.35, 79.87, 11.52]
+    muthupet: [79.35, 10.25, 79.65, 10.42]
+    godavari: [82.15, 16.55, 82.40, 16.95]
+    krishna: [80.75, 15.65, 81.10, 15.95]
+
+s2:
+  scale: 10
+  max_cloud_pct: 80
+  min_valid_frac: 0.5
+
+s1:
+  orbit_pass: "DESCENDING"
+
+gedi:
+  scale: 25
+
+worldcover:
+  mangrove_class: 95
+  mask_training: true
+  mask_plots: false
+
+training:
+  cell_size_deg: 0.01
+  cv_folds: 5
+  random_state: 42
+
+# Model 1: ecosystem classifier
+classifier:
+  year: 2021                 # WorldCover v200 is the 2021 map, so features use 2021 too
+  points_per_class: 1500     # per box, per class (stratified sample)
+  accept_mangrove_frac: 0.6  # plot accepted if >= this share of pixels predicted mangrove
+  review_mangrove_frac: 0.3  # between review and accept -> manual review; below -> reject
+  plot_sample_points: 400
+
+# Model 2: carbon estimator (GEDI L4A labels)
+carbon:
+  gedi_start: "2019-04-01"
+  gedi_end: "2025-06-30"
+  points_per_quarter: 400    # per box, per quarter
+  # IPCC 2013 Wetlands Supplement Ch.4, Table 4.2: mangrove leaves+wood 45.1 %C (n=47)
+  carbon_fraction: 0.451
+  carbon_fraction_alt: 0.47  # generic 2006 IPCC default, reported as sensitivity
+  # IPCC 2013 Wetlands Supplement Ch.4, Table 4.5: tropical dry R=0.29, tropical wet R=0.49.
+  # 0.29 chosen as the conservative value; 0.49 reported as sensitivity.
+  root_to_shoot: 0.29
+  root_to_shoot_alt: 0.49
+  # GEDI shots above this are treated as implausible for mangroves and dropped (count is reported)
+  max_agbd: 500
+  ci_z: 1.645                # 90% one-sided interval for the uncertainty deduction
+
+# Model 3: anomaly detector
+anomaly:
+  contamination: 0.05
+
+# Synthetic control baseline
+baseline:
+  donor_cell_deg: 0.01       # donor plots = grid cells of this size
+  donor_min_mangrove_frac: 0.5
+  donors_per_box: 40         # random eligible cells per study box -> donor pool
+  max_donors: 60             # closest donors (pre-period) given to the optimizer
+  exclude_buffer_deg: 0.01   # donors this close to the farmer plot are excluded
+  pre_quarters: 16           # quarters before project start used to fit weights
+  crediting_quarters: 8      # ASSUMED, to confirm
+  buffer_frac: 0.20          # ASSUMED, to confirm
+
+# Demo plot (historical replay: project start in the past so real data exists)
+demo:
+  project_start: "2023-01-01"
