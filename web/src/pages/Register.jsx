@@ -1,63 +1,42 @@
-// Three simple steps, like the first version: 1 About you -> 2 Your land -> 3 Your ecosystem.
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CheckCircle, ChevronRight, Leaf, Loader2, MapPin, ShieldCheck, Sprout, TreePine, User, Waves, XCircle } from "lucide-react";
 import { api } from "../lib/api.js";
 import { useWallet } from "../lib/wallet.jsx";
-import { landText, quarterOf } from "../lib/format.js";
+import { fmt } from "../lib/format.js";
 import { DrawMap } from "../components/Maps.jsx";
 import SuccessModal from "../components/SuccessModal.jsx";
-import { ErrorNote, Note, Spinner } from "../components/ui.jsx";
 
-const STEPS = ["About you", "Your land", "Your ecosystem"];
-
+const STEPS = [{ id: 1, label: "Personal", icon: User }, { id: 2, label: "Land", icon: MapPin }, { id: 3, label: "Ecosystem", icon: Sprout }];
 const ECOSYSTEMS = [
-  ["mangrove", "Mangrove", "Trees growing in salty, tidal coastal water", "🌳", true],
-  ["seagrass", "Seagrass", "Underwater meadows (coming later)", "🌊", false],
-  ["saltmarsh", "Salt marsh", "Grassy land flooded by tides (coming later)", "🌾", false],
+  { value: "mangrove", label: "Mangrove", icon: TreePine, text: "Coastal forests in tidal zones", enabled: true },
+  { value: "seagrass", label: "Seagrass", icon: Waves, text: "Coming soon", enabled: false },
+  { value: "saltmarsh", label: "Saltmarsh", icon: Leaf, text: "Coming soon", enabled: false },
 ];
 
-function Stepper({ step, setStep, canGo }) {
-  return <ol className="flex items-center justify-center gap-2 sm:gap-4">
-    {STEPS.map((label, i) => <li key={label} className="flex items-center gap-2 sm:gap-4">
-      <button type="button" disabled={!canGo(i)} onClick={() => setStep(i)}
-        className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition sm:px-4 ${
-          i === step ? "border-lagoon/40 bg-lagoon-light text-lagoon" : i < step ? "border-leaf/30 bg-leaf-light text-leaf" : "border-line bg-paper text-muted"}`}>
-        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${i < step ? "bg-leaf text-white" : i === step ? "bg-lagoon text-white" : "bg-line"}`}>{i < step ? "✓" : i + 1}</span>
-        <span className="hidden sm:inline">{label}</span>
-      </button>
-      {i < STEPS.length - 1 && <span className="text-muted">›</span>}
-    </li>)}
-  </ol>;
-}
-
-function Check({ ok, children }) {
-  return <li className={`flex items-start gap-2 text-sm ${ok ? "text-leaf" : "text-coral"}`}>
-    <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs text-white ${ok ? "bg-leaf" : "bg-coral"}`}>{ok ? "✓" : "✗"}</span>
-    <span className="text-ink">{children}</span>
-  </li>;
-}
+const Label = ({ children }) => <label className="mb-2 block text-xs font-medium tracking-wider text-slate-400 uppercase">{children}</label>;
 
 export default function Register() {
-  const nav = useNavigate();
   const { user } = useWallet();
-  const [step, setStep] = useState(0);
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({ ownerName: "", village: "", landRecordNo: "", name: "", ecosystem: "mangrove", projectStart: "" });
   const [cfg, setCfg] = useState(null);
   const [existing, setExisting] = useState([]);
   const [geometry, setGeometry] = useState(null);
   const [check, setCheck] = useState(null);
   const [checking, setChecking] = useState(false);
-  const [form, setForm] = useState({ ownerName: user?.name || "", village: "", landRecordNo: "", name: "", ecosystem: "mangrove", projectStart: "" });
-  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(null);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   useEffect(() => {
-    api("/system/ml-config").then((c) => { setCfg(c); setForm((f) => ({ ...f, projectStart: f.projectStart || c.demo.project_start })); }).catch((e) => setError(e.message));
+    api("/system/ml-config").then((c) => { setCfg(c); setForm((f) => ({ ...f, projectStart: f.projectStart || c.demo.project_start })); }).catch(() => {});
     api("/projects/public").then(setExisting).catch(() => {});
   }, []);
 
-  // Check the drawing as soon as it changes (area, overlap, inside the area we can check)
+  // area / overlap / study-area check whenever the polygon changes
   useEffect(() => {
     if (!geometry) { setCheck(null); return; }
     setChecking(true);
@@ -65,104 +44,101 @@ export default function Register() {
       .then(setCheck).catch((e) => setCheck({ ok: false, problems: [e.message] })).finally(() => setChecking(false)), 400);
     return () => clearTimeout(t);
   }, [geometry]);
-
   const onDraw = useCallback((g) => setGeometry(g), []);
-  const step1ok = form.ownerName.trim().length > 1;
-  const step2ok = !!geometry && check?.ok && !checking;
-  const canGo = (i) => i === 0 || (i === 1 && step1ok) || (i === 2 && step1ok && step2ok);
-  const replay = form.projectStart && form.projectStart < new Date().toISOString().slice(0, 10);
 
-  const submit = async () => {
+  if (!user) return <div className="flex flex-1 items-center justify-center p-8">
+    <div className="glass-card max-w-md p-12 text-center">
+      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20"><ShieldCheck className="h-8 w-8 text-emerald-400" /></div>
+      <h2 className="mb-2 text-xl font-bold text-white">MetaMask Required</h2>
+      <p className="text-sm text-slate-500">Please connect your wallet to access the registration portal.</p>
+    </div>
+  </div>;
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!geometry || !check?.ok) { setError("Please draw a valid plot on the map (step 2)."); return; }
     setError(""); setSubmitting(true);
     try {
-      const plot = await api("/projects", { method: "POST", body: { ...form, name: form.name || `${form.ownerName}'s plot`, geometry } });
-      setDone(plot);
-    } catch (e) { setError(e.message); } finally { setSubmitting(false); }
+      await api("/projects", { method: "POST", body: { ...form, name: form.name || `${form.ownerName}'s plot`, geometry } });
+      setDone(true);
+    } catch (err) { setError(err.message); } finally { setSubmitting(false); }
   };
 
-  return <div className="mx-auto max-w-4xl space-y-8">
-    <div className="text-center">
-      <h1 className="text-3xl">Register your land</h1>
-      <p className="mt-2 text-muted">Three short steps. It takes about 2 minutes.</p>
+  return <div className="w-full flex-1 p-4 md:p-8">
+    <div className="mx-auto max-w-4xl space-y-8">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-white md:text-3xl">Project Registration</h1>
+        <p className="mt-2 text-sm text-slate-500">Register your coastal ecosystem plot into the blockchain registry.</p>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 md:gap-4">
+        {STEPS.map((s, i) => <Fragment key={s.id}>
+          <button type="button" onClick={() => setStep(s.id)}
+            className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition ${step === s.id ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : step > s.id ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-white/[0.06] bg-white/[0.03] text-slate-500"}`}>
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step > s.id ? "bg-emerald-500 text-white" : step === s.id ? "bg-emerald-500/20 text-emerald-400" : "bg-white/[0.08]"}`}>
+              {step > s.id ? <CheckCircle className="h-3.5 w-3.5" /> : s.id}</span>
+            <span className="hidden sm:inline">{s.label}</span>
+          </button>
+          {i < STEPS.length - 1 && <ChevronRight className="h-4 w-4 text-slate-600" />}
+        </Fragment>)}
+      </div>
+
+      <form onSubmit={submit} className="space-y-6">
+        {step === 1 && <div className="glass-card animate-fade-up p-6 md:p-8">
+          <h2 className="mb-6 flex items-center gap-3 text-lg font-bold text-white"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15"><User className="h-4 w-4 text-emerald-400" /></span>Personal Details</h2>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div><Label>Full Name</Label><input required className="input-dark" value={form.ownerName} onChange={set("ownerName")} placeholder="Murugan" /></div>
+            <div><Label>Village</Label><input className="input-dark" value={form.village} onChange={set("village")} placeholder="Killai" /></div>
+            <div className="md:col-span-2"><Label>Land Record (RTC) Number — optional</Label><input className="input-dark" value={form.landRecordNo} onChange={set("landRecordNo")} placeholder="TN-1234-567" /></div>
+            <div className="md:col-span-2"><Label>Mock ID (no Aadhaar needed)</Label><input readOnly className="input-dark font-mono opacity-60" value={user.mockId} /></div>
+          </div>
+          <div className="mt-6 flex justify-end"><button type="button" disabled={!form.ownerName.trim()} onClick={() => setStep(2)} className="btn-primary px-6 py-2.5">Next <ChevronRight className="h-4 w-4" /></button></div>
+        </div>}
+
+        {step === 2 && <div className="glass-card animate-fade-up p-6 md:p-8">
+          <h2 className="mb-2 flex items-center gap-3 text-lg font-bold text-white"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15"><MapPin className="h-4 w-4 text-blue-400" /></span>Land Identification</h2>
+          <p className="mb-4 text-sm text-slate-500">Use the polygon tool (top-left of the map) to mark your plot. Dashed boxes show where the system works.</p>
+          <DrawMap onChange={onDraw} boxes={cfg?.study_area?.boxes} existing={existing} center={cfg ? [cfg.site.centre.lat, cfg.site.centre.lon] : undefined} />
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div><Label>Land Area (Hectares)</Label><input readOnly className="input-dark opacity-70" value={check?.areaHa != null ? fmt(check.areaHa, 2) : ""} placeholder="Auto-computed from map polygon" /></div>
+            <div className="md:col-span-2 flex items-end">
+              {checking ? <p className="flex items-center gap-2 pb-3 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /> Checking plot…</p>
+                : check && <div className={`w-full rounded-xl border p-3 text-sm ${check.ok ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-rose-500/20 bg-rose-500/10 text-rose-400"}`}>
+                  {check.ok ? <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4" /> Plot looks good ({check.region?.box} area, no overlaps)</span>
+                    : <span className="flex items-start gap-2"><XCircle className="mt-0.5 h-4 w-4 shrink-0" /> {[check.error, ...(check.problems || [])].filter(Boolean).join(" · ")}</span>}
+                </div>}
+            </div>
+          </div>
+          <div className="mt-6 flex justify-between">
+            <button type="button" onClick={() => setStep(1)} className="btn-ghost px-6 py-2.5">Back</button>
+            <button type="button" disabled={!check?.ok} onClick={() => setStep(3)} className="btn-primary px-6 py-2.5">Next <ChevronRight className="h-4 w-4" /></button>
+          </div>
+        </div>}
+
+        {step === 3 && <div className="glass-card animate-fade-up p-6 md:p-8">
+          <h2 className="mb-6 flex items-center gap-3 text-lg font-bold text-white"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/15"><Sprout className="h-4 w-4 text-teal-400" /></span>Ecosystem Type</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {ECOSYSTEMS.map((e) => <button type="button" key={e.value} disabled={!e.enabled} onClick={() => setForm({ ...form, ecosystem: e.value })}
+              className={`rounded-xl border p-5 text-left transition ${form.ecosystem === e.value ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]"} disabled:cursor-not-allowed disabled:opacity-40`}>
+              <e.icon className={`mb-3 h-6 w-6 ${form.ecosystem === e.value ? "text-emerald-400" : "text-slate-400"}`} />
+              <p className="font-semibold text-white">{e.label}</p>
+              <p className="mt-1 text-xs text-slate-500">{e.text}</p>
+            </button>)}
+          </div>
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div><Label>Plot Name</Label><input className="input-dark" value={form.name} onChange={set("name")} placeholder={`${form.ownerName || "My"}'s plot`} /></div>
+            <div><Label>Project Start Date</Label><input type="date" required className="input-dark" value={form.projectStart} onChange={set("projectStart")} /></div>
+          </div>
+          {error && <div className="mt-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">{error}</div>}
+          <div className="mt-6 flex justify-between">
+            <button type="button" onClick={() => setStep(2)} className="btn-ghost px-6 py-2.5">Back</button>
+            <button type="submit" disabled={submitting} className="btn-primary px-8 py-2.5">{submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Registering…</> : "Register Project"}</button>
+          </div>
+        </div>}
+      </form>
     </div>
-    <Stepper step={step} setStep={setStep} canGo={canGo} />
 
-    {step === 0 && <section className="card space-y-5 p-6 sm:p-8">
-      <h2 className="text-xl">About you</h2>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <label className="block"><span className="text-sm font-medium">Your name *</span>
-          <input className="input mt-1.5 py-3 text-base" value={form.ownerName} onChange={set("ownerName")} placeholder="e.g. Murugan" maxLength={60} /></label>
-        <label className="block"><span className="text-sm font-medium">Village</span>
-          <input className="input mt-1.5 py-3 text-base" value={form.village} onChange={set("village")} placeholder="e.g. Killai" maxLength={60} /></label>
-        <label className="block sm:col-span-2"><span className="text-sm font-medium">Land record (RTC / patta) number <span className="text-muted">(optional)</span></span>
-          <input className="input mt-1.5 py-3 text-base" value={form.landRecordNo} onChange={set("landRecordNo")} placeholder="e.g. TN-1234-567" maxLength={40} /></label>
-      </div>
-      <Note>We do <b>not</b> ask for Aadhaar, phone number or bank details. Your wallet is your identity (ID {user?.mockId}). This is a demo, so use made-up details if you prefer.</Note>
-      <div className="flex justify-end"><button className="btn-primary px-6 py-3 text-base" disabled={!step1ok} onClick={() => setStep(1)}>Next ›</button></div>
-    </section>}
-
-    {step === 1 && <section className="card space-y-5 p-6 sm:p-8">
-      <div>
-        <h2 className="text-xl">Your land</h2>
-        <p className="mt-1 text-sm text-muted">Tap the <b>shape tool</b> (top-left of the map), then tap each corner of your land. Tap the first corner again to finish. Dashed boxes show the coast we can check right now.</p>
-      </div>
-      <DrawMap onChange={onDraw} boxes={cfg?.study_area?.boxes} existing={existing}
-        center={cfg ? [cfg.site.centre.lat, cfg.site.centre.lon] : undefined} />
-      <div className="rounded-xl bg-sand p-4">
-        {!geometry && <p className="text-sm text-muted">Draw your land on the map to continue.</p>}
-        {geometry && checking && <p className="flex items-center gap-2 text-sm text-muted"><Spinner /> Checking your land…</p>}
-        {geometry && check && !checking && <ul className="space-y-2">
-          {check.areaHa != null && <Check ok={!check.problems?.some((p) => p.startsWith("Area"))}>Size: <b>{landText(check.areaHa)}</b>{check.problems?.find((p) => p.startsWith("Area")) && <> (must be 0.5–500 ha)</>}</Check>}
-          {check.region && <Check ok={check.region.inside}>{check.region.inside ? "Inside the coast area we can check" : "Outside the area we can check right now (Tamil Nadu & Andhra Pradesh coast, dashed boxes)"}</Check>}
-          {check.overlaps && <Check ok={!check.overlaps.length}>{check.overlaps.length ? `Overlaps land already registered: ${check.overlaps.join(", ")}` : "Does not overlap anyone else's land"}</Check>}
-          {check.error && <Check ok={false}>{check.error}</Check>}
-        </ul>}
-      </div>
-      <div className="flex justify-between">
-        <button className="btn-ghost px-6 py-3 text-base" onClick={() => setStep(0)}>‹ Back</button>
-        <button className="btn-primary px-6 py-3 text-base" disabled={!step2ok} onClick={() => setStep(2)}>Next ›</button>
-      </div>
-    </section>}
-
-    {step === 2 && <section className="card space-y-6 p-6 sm:p-8">
-      <h2 className="text-xl">What grows on your land?</h2>
-      <div className="grid gap-3 sm:grid-cols-3">
-        {ECOSYSTEMS.map(([v, label, desc, icon, enabled]) => <button key={v} type="button" disabled={!enabled} onClick={() => setForm({ ...form, ecosystem: v })}
-          className={`rounded-2xl border p-5 text-left transition ${form.ecosystem === v ? "border-leaf bg-leaf-light ring-2 ring-leaf/30" : "border-line bg-paper"} ${enabled ? "hover:border-leaf/50" : "cursor-not-allowed opacity-50"}`}>
-          <div className="text-3xl">{icon}</div>
-          <div className="mt-2 font-medium">{label}</div>
-          <div className="mt-0.5 text-xs text-muted">{desc}</div>
-        </button>)}
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <label className="block"><span className="text-sm font-medium">Name for this plot</span>
-          <input className="input mt-1.5 py-3 text-base" value={form.name} onChange={set("name")} placeholder={`${form.ownerName || "My"}'s plot`} maxLength={80} /></label>
-        <label className="block"><span className="text-sm font-medium">When did you start protecting / planting?</span>
-          <input type="date" className="input mt-1.5 py-3 text-base" value={form.projectStart} onChange={set("projectStart")} />
-          {form.projectStart && <span className="mt-1 block text-xs text-muted">We check your land every 3 months for 2 years, from {quarterOf(form.projectStart)}.</span>}</label>
-      </div>
-      {replay && <Note tone="amber"><b>Demo mode (past date).</b> Satellite pictures for these months already exist, so you can see the full process now. In real use you would register at the start.</Note>}
-
-      <div className="rounded-xl bg-sand p-4 text-sm">
-        <div className="label mb-2">Please check</div>
-        <div className="grid gap-1 sm:grid-cols-2">
-          <div>Farmer: <b>{form.ownerName}</b>{form.village && `, ${form.village}`}</div>
-          <div>Land: <b>{landText(check?.areaHa)}</b></div>
-          <div>Ecosystem: <b className="capitalize">{form.ecosystem}</b></div>
-          {form.landRecordNo && <div>Land record: <b>{form.landRecordNo}</b></div>}
-        </div>
-      </div>
-      <ErrorNote>{error}</ErrorNote>
-      <div className="flex justify-between">
-        <button className="btn-ghost px-6 py-3 text-base" onClick={() => setStep(1)}>‹ Back</button>
-        <button className="btn-primary px-6 py-3 text-base" disabled={submitting || !form.projectStart} onClick={submit}>{submitting ? <><Spinner /> Registering…</> : "Register my land ✓"}</button>
-      </div>
-    </section>}
-
-    {done && <SuccessModal title="Land registered!" onClose={() => nav("/my-plots")}
-      actions={<button className="btn-primary py-3 text-base" onClick={() => nav(`/my-plots?plot=${done._id}`)}>Go to my plots</button>}>
-      We are now looking at satellite pictures of <b>{done.name}</b> to confirm it is mangrove, and then locking your starting point on the blockchain. This usually takes <b>1–3 minutes</b>. You can follow it on "My plots".
-    </SuccessModal>}
+    {done && <SuccessModal title="Project Registered!" onClose={() => navigate("/dashboard")}
+      message="Your plot is saved. The system is now checking satellite data and locking the baseline on the blockchain. This takes 1–3 minutes; you can follow it on the dashboard." />}
   </div>;
 }

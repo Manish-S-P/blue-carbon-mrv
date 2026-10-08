@@ -1,34 +1,53 @@
 @import "tailwindcss";
 
+/* Dark "glass" theme, same look as the first version of the app. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", Georgia, serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --color-sand: #f5f2ea;      /* page background */
-  --color-paper: #fffdf8;     /* cards */
-  --color-ink: #12201e;       /* text */
-  --color-muted: #5b6b67;
-  --color-line: #e2ddd0;
-  --color-lagoon: #0c5e5b;    /* primary */
-  --color-lagoon-light: #d8ece7;
-  --color-leaf: #2f7a45;      /* success / mangrove */
-  --color-leaf-light: #e1f1e3;
-  --color-amber: #b26b00;     /* review */
-  --color-amber-light: #fbefd9;
-  --color-coral: #b4442f;     /* error / reject */
-  --color-coral-light: #f8e2dc;
+  /* tokens used by the other pages (Verify, Science, System, Review) */
+  --color-sand: #020617;
+  --color-paper: rgb(255 255 255 / 0.05);
+  --color-ink: #f1f5f9;
+  --color-muted: #94a3b8;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-lagoon: #10b981;
+  --color-lagoon-light: rgb(16 185 129 / 0.15);
+  --color-leaf: #34d399;
+  --color-leaf-light: rgb(52 211 153 / 0.12);
+  --color-amber: #fbbf24;
+  --color-amber-light: rgb(251 191 36 / 0.12);
+  --color-coral: #fb7185;
+  --color-coral-light: rgb(251 113 133 / 0.12);
+
+  --animate-fade-up: fade-up 0.5s ease-out both;
+  --animate-scale-in: scale-in 0.25s ease-out both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-delayed: float 6s ease-in-out 2s infinite;
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  @keyframes fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+  @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgb(52 211 153 / 0.3); } 50% { box-shadow: 0 0 40px rgb(52 211 153 / 0.6); } }
 }
 
-body { @apply bg-sand text-ink font-sans antialiased; }
-h1, h2, h3 { @apply font-display; }
+html { color-scheme: dark; }
+body { @apply bg-slate-950 text-slate-100 font-sans antialiased; }
 
-@utility card { @apply bg-paper border border-line rounded-2xl; }
-@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed; }
-@utility btn-primary { @apply btn bg-lagoon text-white hover:bg-[#094b49]; }
-@utility btn-ghost { @apply btn border border-line bg-paper hover:bg-white; }
-@utility btn-danger { @apply btn bg-coral text-white hover:opacity-90; }
-@utility label { @apply text-xs font-medium uppercase tracking-wider text-muted; }
-@utility input { @apply w-full rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-lagoon focus:ring-2 focus:ring-lagoon-light; }
+@utility glass { @apply bg-white/[0.05] backdrop-blur-xl border border-white/[0.08]; }
+@utility glass-card { @apply bg-white/[0.05] backdrop-blur-xl border border-white/[0.08] rounded-2xl; }
+@utility glass-card-hover { @apply glass-card transition-all duration-300 hover:bg-white/[0.08] hover:border-white/[0.15]; }
+@utility text-gradient { @apply text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400; }
+@utility glow-emerald { box-shadow: 0 0 30px rgb(52 211 153 / 0.15), 0 0 60px rgb(52 211 153 / 0.05); }
+@utility input-dark { @apply w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed; }
+@utility btn-primary { @apply btn bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold hover:from-emerald-400 hover:to-teal-400 hover:shadow-lg hover:shadow-emerald-500/25; }
+@utility btn-ghost { @apply btn bg-white/[0.05] border border-white/[0.1] text-slate-300 hover:bg-white/[0.1] hover:text-white; }
+@utility btn-danger { @apply btn bg-rose-500/80 text-white hover:bg-rose-500; }
+@utility card { @apply glass-card; }
+@utility label { @apply text-[10px] font-medium uppercase tracking-wider text-slate-500; }
+@utility input { @apply input-dark py-2 text-sm; }
 
-.leaflet-container { font-family: var(--font-sans); }
+h1, h2, h3 { @apply font-bold; }
+.leaflet-container { font-family: var(--font-sans); background: #0f172a; }

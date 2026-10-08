@@ -2,8 +2,8 @@
 import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fmt } from "../lib/format.js";
 
-const C = { ink: "#12201e", lagoon: "#0c5e5b", leaf: "#2f7a45", amber: "#b26b00", coral: "#b4442f", muted: "#8a9894", band: "#d8ece7", grid: "#e9e4d8" };
-const axis = { fontSize: 11, fill: "#5b6b67" };
+const C = { ink: "#e2e8f0", lagoon: "#38bdf8", leaf: "#34d399", amber: "#fbbf24", coral: "#fb7185", muted: "#64748b", band: "rgba(16,185,129,0.15)", grid: "#1e293b" };
+const axis = { fontSize: 11, fill: "#94a3b8" };
 
 export function BaselineChart({ baseline, observations = [] }) {
   if (!baseline) return null;

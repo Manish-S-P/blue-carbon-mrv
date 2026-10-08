@@ -13,6 +13,7 @@
     "@geoman-io/leaflet-geoman-free": "^2.20.2",
     "ethers": "^6.17.0",
     "leaflet": "^1.9.4",
+    "lucide-react": "^1.53.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-leaflet": "^5.0.0",

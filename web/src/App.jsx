@@ -1,42 +1,37 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import Layout from "./components/Layout.jsx";
-import Home from "./pages/Home.jsx";
-import MyPlots from "./pages/MyPlots.jsx";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
+import Navbar from "./components/Navbar.jsx";
+import Landing from "./pages/Landing.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 import Register from "./pages/Register.jsx";
-import PlotDetail from "./pages/PlotDetail.jsx";
 import Verify from "./pages/Verify.jsx";
 import Science from "./pages/Science.jsx";
 import Review from "./pages/Review.jsx";
 import System from "./pages/System.jsx";
-import { useWallet } from "./lib/wallet.jsx";
 
-// Pages that need a wallet show a friendly "connect" card instead of bouncing away.
-function Private({ children }) {
-  const { user, signIn, busy, error } = useWallet();
-  if (user) return children;
-  return <div className="card mx-auto max-w-md p-10 text-center">
-    <div className="text-5xl">🔑</div>
-    <h1 className="mt-4 text-2xl">Connect your wallet</h1>
-    <p className="mt-2 text-muted">Your MetaMask wallet is your login. No password, no Aadhaar.</p>
-    <button className="btn-primary mt-6 w-full py-3 text-base" disabled={busy} onClick={() => signIn()}>{busy ? "Check MetaMask…" : "Connect wallet"}</button>
-    {error && <p className="mt-3 text-sm text-coral">{error}</p>}
-  </div>;
+// Reviewer pages (verify, science, system, review) are reachable by link but not in the main menu.
+function Page({ children }) {
+  return <div className="mx-auto w-full max-w-7xl p-4 md:p-8">{children}</div>;
+}
+
+function OldPlotLink() {
+  const { id } = useParams();
+  return <Navigate to={`/dashboard?plot=${id}`} replace />;
 }
 
 export default function App() {
-  return <Layout>
+  return <div className="flex min-h-screen flex-col bg-slate-950">
+    <Navbar />
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/my-plots" element={<Private><MyPlots /></Private>} />
-      <Route path="/dashboard" element={<Navigate to="/my-plots" replace />} />
-      <Route path="/register" element={<Private><Register /></Private>} />
-      <Route path="/plots/:id" element={<PlotDetail />} />
-      <Route path="/verify" element={<Verify />} />
-      <Route path="/verify/:id" element={<Verify />} />
-      <Route path="/science" element={<Science />} />
-      <Route path="/review" element={<Private><Review /></Private>} />
-      <Route path="/system" element={<System />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verify" element={<Page><Verify /></Page>} />
+      <Route path="/verify/:id" element={<Page><Verify /></Page>} />
+      <Route path="/science" element={<Page><Science /></Page>} />
+      <Route path="/review" element={<Page><Review /></Page>} />
+      <Route path="/system" element={<Page><System /></Page>} />
+      <Route path="/plots/:id" element={<OldPlotLink />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  </Layout>;
+  </div>;
 }
