@@ -5,6 +5,12 @@ const plotSchema = new mongoose.Schema(
   {
     owner: { type: String, required: true, lowercase: true, index: true },
     name: { type: String, required: true },
+    // MOCK farmer details (prototype only, no real personal data)
+    ownerName: String,
+    village: String,
+    landRecordNo: String, // optional mock land record (RTC) number
+    // Background job shown on the dashboard, e.g. "check all quarters"
+    job: { kind: String, running: Boolean, done: Number, total: Number, message: String, error: String },
     ecosystem: { type: String, enum: ["mangrove", "seagrass", "saltmarsh"], required: true },
     geometry: { type: { type: String, enum: ["Polygon"], required: true }, coordinates: { type: Array, required: true } },
     areaHa: { type: Number, required: true },

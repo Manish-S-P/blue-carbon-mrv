@@ -77,3 +77,23 @@ export function FractionBar({ fractions }) {
     </div>
   </div>;
 }
+
+// Farmer view: measured carbon (bars) vs expected without project, and the credit line.
+export function SimpleProgressChart({ baseline, observations = [] }) {
+  const byQ = Object.fromEntries(observations.filter((o) => o.co2eTHa != null).map((o) => [o.quarter, o.co2eTHa]));
+  const data = baseline.future_quarters.map((q, i) => ({
+    q, measured: byQ[q], expected: baseline.baseline[i], creditLine: baseline.baseline[i] + baseline.uncertainty_t_ha,
+  }));
+  return <ResponsiveContainer width="100%" height={260}>
+    <ComposedChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+      <CartesianGrid stroke={C.grid} vertical={false} />
+      <XAxis dataKey="q" tick={axis} />
+      <YAxis tick={axis} label={{ value: "t CO₂ / ha", angle: -90, position: "insideLeft", offset: 20, style: axis }} />
+      <Tooltip formatter={(v, n) => [`${fmt(v, 0)} t/ha`, n]} contentStyle={{ borderRadius: 12, fontSize: 12 }} />
+      <Legend wrapperStyle={{ fontSize: 12 }} />
+      <Bar isAnimationActive={false} dataKey="measured" name="Your land (measured)" fill={C.leaf} radius={[6, 6, 0, 0]} barSize={28} />
+      <Line isAnimationActive={false} dataKey="expected" name="Expected without project" stroke={C.lagoon} strokeWidth={2} dot={false} />
+      <Line isAnimationActive={false} dataKey="creditLine" name="Credit line (expected + safety margin)" stroke={C.amber} strokeWidth={2.5} strokeDasharray="6 4" dot={false} />
+    </ComposedChart>
+  </ResponsiveContainer>;
+}

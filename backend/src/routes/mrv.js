@@ -36,6 +36,50 @@ r.post("/quarterly-run/:plotId", requireAuth, wrap(async (req, res) => {
   res.json(obs);
 }));
 
+// Farmer-friendly: check every remaining quarter in the background. The dashboard polls plot.job.
+r.post("/run-all/:plotId", requireAuth, wrap(async (req, res) => {
+  const plot = await loadOwnPlot(req);
+  const id = String(plot._id);
+  if (running.has(id)) return res.status(409).json({ error: "Another job is running for this plot" });
+  const done = await Observation.find({ plot: plot._id, status: { $ne: "no_data" } }).distinct("quarterIndex");
+  const todo = plot.baseline.future_quarters.map((_, i) => i).filter((i) => !done.includes(i));
+  if (!todo.length) return res.status(409).json({ error: "All crediting quarters are processed" });
+  plot.job = { kind: "run-all", running: true, done: 0, total: todo.length, message: "Starting" };
+  await plot.save();
+  res.json({ started: todo.length });
+  once(id, async () => {
+    for (const [n, i] of todo.entries()) {
+      plot.job = { ...plot.job, done: n, message: `Checking ${plot.baseline.future_quarters[i]}` };
+      await plot.save();
+      try { await runQuarter(plot, i); } catch (e) {
+        if (e.status === 409) { plot.job = { ...plot.job, message: e.message }; break; } // e.g. quarter not finished yet
+        plot.job = { ...plot.job, running: false, error: e.message };
+        return plot.save();
+      }
+    }
+    plot.job = { ...plot.job, running: false, done: plot.job.total, message: "Finished" };
+    await plot.save();
+  }).catch(async (e) => { plot.job = { ...plot.job, running: false, error: e.message }; await plot.save(); });
+}));
+
+// Farmer-friendly: reveal + mint every checked quarter that is not settled yet.
+r.post("/claim/:plotId", requireAuth, wrap(async (req, res) => {
+  const plot = await loadOwnPlot(req);
+  const ready = await Observation.find({ plot: plot._id, status: "on_chain", settled: false }).sort({ quarterIndex: 1 });
+  if (!ready.length) return res.status(409).json({ error: "No checked quarters waiting to be claimed" });
+  const results = await once(String(plot._id), async () => {
+    const out = [];
+    for (const obs of ready) out.push(await settleQuarter(plot, obs));
+    return out;
+  });
+  const minted = results.filter((o) => o.tokenId);
+  res.json({
+    settled: results.length, minted: minted.length,
+    creditMilli: minted.reduce((s, o) => s + o.creditMilli, 0),
+    quarters: results.map((o) => ({ quarter: o.quarter, tokenId: o.tokenId, creditMilli: o.creditMilli })),
+  });
+}));
+
 r.post("/observations/:obsId/review", requireAuth, requireVerifier, wrap(async (req, res) => {
   const obs = await Observation.findById(req.params.obsId);
   if (!obs || obs.status !== "held_for_review") return res.status(400).json({ error: "Not waiting for review" });

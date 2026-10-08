@@ -24,7 +24,7 @@ r.post("/check", requireAuth, wrap(async (req, res) => {
 }));
 
 r.post("/", requireAuth, wrap(async (req, res) => {
-  const { name, ecosystem, geometry, projectStart } = req.body;
+  const { name, ecosystem, geometry, projectStart, ownerName, village, landRecordNo } = req.body;
   const err = validatePolygon(geometry);
   if (err) return res.status(400).json({ error: err });
   if (ecosystem !== "mangrove") {
@@ -39,6 +39,8 @@ r.post("/", requireAuth, wrap(async (req, res) => {
   const plot = await Plot.create({
     owner: req.user.address, name: String(name || "My plot").slice(0, 80), ecosystem, geometry,
     areaHa: Number(ha.toFixed(4)), projectStart, step: "queued",
+    ownerName: String(ownerName || "").slice(0, 60), village: String(village || "").slice(0, 60),
+    landRecordNo: String(landRecordNo || "").slice(0, 40),
   });
   processPlot(plot._id); // background: classify -> baseline -> commit
   res.status(201).json(plot);
@@ -46,8 +48,15 @@ r.post("/", requireAuth, wrap(async (req, res) => {
 
 r.get("/", requireAuth, wrap(async (req, res) => {
   const mine = req.query.all === "1" && isVerifier(req.user.address) ? {} : { owner: req.user.address };
-  const plots = await Plot.find(mine).select("-auditJson -baseline.pre_features").sort({ createdAt: -1 });
-  res.json(plots);
+  const plots = await Plot.find(mine).select("-auditJson -baseline.pre_features").sort({ createdAt: -1 }).lean();
+  // Per-plot totals for the dashboard tiles
+  const sums = await Observation.aggregate([
+    { $match: { plot: { $in: plots.map((p) => p._id) } } },
+    { $group: { _id: "$plot", creditMilli: { $sum: { $ifNull: ["$creditMilli", 0] } }, bufferMilli: { $sum: { $ifNull: ["$bufferMilli", 0] } },
+                checked: { $sum: { $cond: [{ $in: ["$status", ["on_chain", "held_for_review"]] }, 1, 0] } } } },
+  ]);
+  const byId = Object.fromEntries(sums.map((x) => [String(x._id), x]));
+  res.json(plots.map((p) => ({ ...p, totals: byId[String(p._id)] || { creditMilli: 0, bufferMilli: 0, checked: 0 } })));
 }));
 
 // Public map layer: every registered plot outline (for overlap context), no personal data.

@@ -6,3 +6,7 @@ export const date = (d) => (d ? new Date(d).toLocaleDateString("en-IN", { day: "
 
 // Quarter label for a date, e.g. 2023-01-01 -> 2023Q1
 export const quarterOf = (iso) => { const [y, m] = iso.split("-").map(Number); return `${y}Q${Math.floor((m - 1) / 3) + 1}`; };
+
+// Farmers in India usually think in acres. 1 hectare = 2.471 acres.
+export const acres = (ha) => (ha == null ? "—" : fmt(ha * 2.47105, 1));
+export const landText = (ha) => (ha == null ? "—" : `${acres(ha)} acres (${fmt(ha, 2)} ha)`);
