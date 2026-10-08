@@ -27,6 +27,8 @@ export const config = {
   oracleKey: process.env.ORACLE_PRIVATE_KEY || "",
   deployment: loadDeployment(),
   pinataJwt: process.env.PINATA_JWT || "",
+  pinataKey: process.env.PINATA_API_KEY || "",       // older key + secret style also works
+  pinataSecret: process.env.PINATA_API_SECRET || "",
   ipfsGateway: process.env.IPFS_GATEWAY || "https://gateway.pinata.cloud/ipfs/",
   verifiers: (process.env.VERIFIER_ADDRESSES || "").split(",").map((a) => a.trim().toLowerCase()).filter(Boolean),
   localAuditDir: path.join(root, "local_ipfs"),
